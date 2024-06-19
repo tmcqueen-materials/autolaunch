@@ -6,6 +6,7 @@ import subprocess
 
 import json
 import os
+from signal import SIGUSR1
 
 from ._compat import get_base_handler
 
@@ -34,23 +35,36 @@ class AutoLaunchHandler(JupyterHandler):
         token = self.get_argument('auth_token', '')
         files = self.get_argument('files', '')
         files = json.loads(urlsafe_b64decode(files + '=' * ((4 - len(files)) % 4)))
-        notebook = self.get_argument('notebook','lab')
 
         basedir = os.path.expanduser(self.settings['server_root_dir'])
         mountdir = os.path.join(basedir,'remote')
         analysis_subpath = 'analysis'
         analysisdir = os.path.join(basedir,analysis_subpath)
 
-        with open(os.path.join(basedir,'token.config'),"w") as f:
-            f.write(os.path.join(basedir,'token.index'))
-            f.write("\n")
+        # Find first available new index file
+        i = 0
+        while os.path.isfile(os.path.join(basedir,"remote."+str(i))):
+            i = i + 1
+        idxfile = os.path.join(basedir,"remote."+str(i))
+
+        with open(os.path.join(basedir,'remote.config'),"a") as f:
+            f.write(idxfile)
             if len(token) > 0:
-                f.write("X-Auth-Access-Token: " + token + "\n")
-        with open(os.path.join(basedir,"token.index"),"w") as f:
+                f.write("\t")
+                f.write("X-Auth-Access-Token: " + token)
+            f.write("\n")
+        with open(idxfile,"w") as f:
             for fil in files:
                 f.write(fil + "\n")
-        os.mkdir(mountdir)
-        subprocess.run(["/urlfs/src/mount.urlfs", os.path.join(basedir,'token.config'), mountdir])
+        if not os.path.ismount(mountdir):
+            # mount
+            os.mkdir(mountdir)
+            subprocess.run(["/urlfs/src/mount.urlfs", os.path.join(basedir,'remote.config'), mountdir])
+        else:
+            # reload urlfs (multiple should not be found, but in case user also used it separately from us,
+            # reload all instances)
+            for pid in map(int,subprocess.check_output(["pidof","mount.urlfs"]).split()):
+                os.kill(pid,SIGUSR1)
 
         analysis_hint = self.get_argument('analysis_hint','')
         if not (analysis_hint in self.analysis_notebooks):
@@ -70,16 +84,15 @@ class AutoLaunchHandler(JupyterHandler):
                             break
 
         nb = self.analysis_notebooks[analysis_hint]
-        os.mkdir(analysisdir)
+        if not os.path.isdir(analysisdir):
+            os.mkdir(analysisdir)
         if len(nb) > 0:
-            copyfile(os.path.join(self.analysis_notebooks_src,nb), os.path.join(analysisdir,nb))
-            os.chmod(os.path.join(analysisdir,nb), 0o444)
+            if not os.path.isfile(os.path.join(analysisdir,nb)):
+                # copy analysis book if not already copied
+                copyfile(os.path.join(self.analysis_notebooks_src,nb), os.path.join(analysisdir,nb))
+                os.chmod(os.path.join(analysisdir,nb), 0o444)
             return_url = self.base_url + 'lab/tree/' + analysis_subpath + '/' + nb
         else:
             return_url = self.base_url + 'lab/'
 
-        if self.get_argument("get_return_url", False):
-            self.write({'return_url': return_url})
-            await self.flush()
-        else:
-            return self.redirect(return_url)
+        return self.redirect(return_url)
