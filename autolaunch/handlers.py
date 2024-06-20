@@ -40,14 +40,21 @@ class AutoLaunchHandler(JupyterHandler):
         mountdir = os.path.join(basedir,'remote')
         analysis_subpath = 'analysis'
         analysisdir = os.path.join(basedir,analysis_subpath)
+        configdir = os.path.join(basedir,'.remote-config')
+
+        # Ensure that requisite directories exist
+        if not os.path.isdir(analysisdir):
+            os.mkdir(analysisdir)
+        if not os.path.isdir(configdir):
+            os.mkdir(configdir)
 
         # Find first available new index file
         i = 0
-        while os.path.isfile(os.path.join(basedir,"remote."+str(i))):
+        while os.path.isfile(os.path.join(configdir,"remote."+str(i))):
             i = i + 1
-        idxfile = os.path.join(basedir,"remote."+str(i))
+        idxfile = os.path.join(configdir,"remote."+str(i))
 
-        with open(os.path.join(basedir,'remote.config'),"a") as f:
+        with open(os.path.join(configdir,'remote.config'),"a") as f:
             f.write(idxfile)
             if len(token) > 0:
                 f.write("\t")
@@ -56,10 +63,12 @@ class AutoLaunchHandler(JupyterHandler):
         with open(idxfile,"w") as f:
             for fil in files:
                 f.write(fil + "\n")
+
+        # mount urlfs if not already mounted
         if not os.path.ismount(mountdir):
             # mount
             os.mkdir(mountdir)
-            subprocess.run(["/urlfs/src/mount.urlfs", os.path.join(basedir,'remote.config'), mountdir])
+            subprocess.run(["/urlfs/src/mount.urlfs", os.path.join(configdir,'remote.config'), mountdir])
         else:
             # reload urlfs (multiple should not be found, but in case user also used it separately from us,
             # reload all instances)
@@ -74,23 +83,21 @@ class AutoLaunchHandler(JupyterHandler):
                 analysis_hint = "XRD-Plot"
             elif len(list(Path(mountdir).glob("*.dat"))) > 0:
                 fil = list(Path(mountdir).glob("*.dat"))[0]
-                with open(fil, "r") as f:
+                with open(fil, "rb") as f:
                     for nv in f:
-                        if 'MPMS3' in nv:
+                        if b'MPMS3' in nv:
                             analysis_hint = 'MPMS-CW'
                             break
-                        elif 'PPMS ACMS' in nv:
+                        elif b'PPMS ACMS' in nv:
                             analysis_hint = 'PPMS-CW'
                             break
 
         nb = self.analysis_notebooks[analysis_hint]
-        if not os.path.isdir(analysisdir):
-            os.mkdir(analysisdir)
         if len(nb) > 0:
             if not os.path.isfile(os.path.join(analysisdir,nb)):
                 # copy analysis book if not already copied
                 copyfile(os.path.join(self.analysis_notebooks_src,nb), os.path.join(analysisdir,nb))
-                os.chmod(os.path.join(analysisdir,nb), 0o444)
+                os.chmod(os.path.join(analysisdir,nb), 0o644)
             return_url = self.base_url + 'lab/tree/' + analysis_subpath + '/' + nb
         else:
             return_url = self.base_url + 'lab/'
