@@ -23,12 +23,14 @@ def _load_jupyter_server_extension(app):
     from .handlers import (
         AutoLaunchHandler,
         RefreshAuthHandler,
+        RefreshAuthCallbackHandler,
     )
 
     web_app = app.web_app
     handlers = [
         (url_path_join(web_app.settings['base_url'], 'autolaunch'), AutoLaunchHandler),
-        (url_path_join(web_app.settings['base_url'], 'autolaunch-refreshauth'), RefreshAuthHandler),
+        (url_path_join(web_app.settings['base_url'], 'autolaunch', 'refresh-auth'), RefreshAuthHandler),
+        (url_path_join(web_app.settings['base_url'], 'autolaunch', 'refresh-auth', 'callback'), RefreshAuthCallbackHandler),
     ]
     # FIXME: See note on how to stop relying on settings to pass information:
     #        https://github.com/jupyterhub/nbgitpuller/pull/242#pullrequestreview-854968180
