@@ -22,11 +22,13 @@ def _load_jupyter_server_extension(app):
     # need base class before importing handler
     from .handlers import (
         AutoLaunchHandler,
+        RefreshAuthHandler,
     )
 
     web_app = app.web_app
     handlers = [
         (url_path_join(web_app.settings['base_url'], 'autolaunch'), AutoLaunchHandler),
+        (url_path_join(web_app.settings['base_url'], 'autolaunch-refreshauth'), RefreshAuthHandler),
     ]
     # FIXME: See note on how to stop relying on settings to pass information:
     #        https://github.com/jupyterhub/nbgitpuller/pull/242#pullrequestreview-854968180

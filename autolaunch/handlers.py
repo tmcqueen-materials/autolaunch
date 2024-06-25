@@ -101,3 +101,39 @@ class AutoLaunchHandler(JupyterHandler):
             return_url = self.base_url + 'lab/'
 
         return self.redirect(return_url)
+
+class RefreshAuthHandler(JupyterHandler):
+    """
+    The /autolaunch-refreshauth endpoint.
+    """
+    @web.authenticated
+    async def get(self):
+        await self._handle_refreshauth()
+
+    # TODO: Asymmetrically encrypt auth_token from javascript front-end to prevent token stealing
+    # from its presence in the URL (since we must use GET instead of POST in JupyterHub user-redirect).
+    async def _handle_refreshauth(self):
+        token = self.get_argument('auth_token', '')
+
+        basedir = os.path.expanduser(self.settings['server_root_dir'])
+        mountdir = os.path.join(basedir,'remote')
+        configdir = os.path.join(basedir,'.remote-config')
+
+#       TODO: update auth tokens in remote.config
+#        with open(os.path.join(configdir,'remote.config'),"a") as f:
+#            f.write(idxfile)
+#            if len(token) > 0:
+#                f.write("\t")
+#                f.write("X-Auth-Access-Token: " + token)
+#            f.write("\n")
+
+        # reload urlfs (multiple should not be found, but in case user also used it separately from us,
+        # reload all instances)
+        for pid in map(int,subprocess.check_output(["pidof","mount.urlfs"]).split()):
+            os.kill(pid,SIGUSR1)
+
+        # TODO: flesh out
+        return_url = self.base_url
+
+        return self.redirect(return_url)
+
