@@ -6,7 +6,7 @@ import os
 class PPMSMTHandlerClass(AnalysisBaseHandlerClass):
     nb = "PPMS-CW.ipynb"
     def copyTemplate(self, dest, srcbasedir):
-        src = os.path.join(basedir,"PPMS")
+        src = os.path.join(srcbasedir,"PPMS")
         if not os.path.isfile(os.path.join(dest,self.nb)):
             # copy analysis book if not already copied
             copyfile(os.path.join(src,self.nb), os.path.join(dest,self.nb))

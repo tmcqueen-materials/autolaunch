@@ -181,7 +181,10 @@ class RefreshAuthHandler(JupyterHandler):
         for p in redirect_info['params']:
             return_page += "<input type=\"hidden\" name=\"" + str(p) + "\" value=\"" + str(redirect_info['params'][p]) + "\"/>"
         return_page += "<input type=\"hidden\" name=\"state\" value=\"" + str(auth_uuid) + "\"/>"
-        return_page += "<input type=\"submit\" value=\"Click to Continue\"/></form><footer><script type=\"text/javascript\">sf();</script></footer></html>"
+        return_page += "<input type=\"hidden\" name=\"redirect_uri\" value=\"" + self.request.protocol + "://" + self.request.host + self.base_url + "autolaunch/refresh-auth/callback" + "\"/>"
+        return_page += "<input type=\"submit\" value=\"Click to Continue\"/></form>"
+        return_page += "<footer><script type=\"text/javascript\">sf();</script></footer>"
+        return_page += "</html>"
         await self.finish(return_page)
 
 class RefreshAuthCallbackHandler(JupyterHandler):
