@@ -30,7 +30,10 @@ class PolyauthAuthHandlerClass(AuthBaseHandlerClass):
         return self.uuid
 
     def getAuthHeaders(self):
-        return ["X-Auth-Access-Token: " + self.token]
+        if self.token and len(self.token) > 0:
+            return ["X-Auth-Access-Token: " + self.token]
+        else:
+            return []
 
     def getRefreshInfo(self):
         if not (self.refresh_endpoint is None or self.refresh_endpoint_params is None):
