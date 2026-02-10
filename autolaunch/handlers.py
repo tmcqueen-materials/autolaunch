@@ -70,45 +70,48 @@ class AutoLaunchHandler(JupyterHandler):
         if not os.path.isdir(configdir):
             os.mkdir(configdir)
 
-        # Find first available new index file
-        i = 0
-        while os.path.isfile(os.path.join(configdir,"remote."+str(i))):
-            i = i + 1
-        idxfile = os.path.join(configdir,"remote."+str(i))
+        # Add access to new files if provided.
+        if len(files) > 0:
+            # Find first available new index file
+            i = 0
+            while os.path.isfile(os.path.join(configdir,"remote."+str(i))):
+                i = i + 1
+            idxfile = os.path.join(configdir,"remote."+str(i))
 
-        # Add necessary refresh info to file in case we need to refresh this token later
-        with open(os.path.join(configdir,'token-refresh.config'),"a") as f:
-            f.write(idxfile)
-            f.write('\t')
-            f.write(authhandler.getAuthUUID())
-            f.write('\t')
-            f.write(token_hint)
-            f.write('\t')
-            f.write(json.dumps(authhandler.getRefreshInfo()))
-            f.write('\n')
+            # Add necessary refresh info to file in case we need to refresh this token later
+            with open(os.path.join(configdir,'token-refresh.config'),"a") as f:
+                f.write(idxfile)
+                f.write('\t')
+                f.write(authhandler.getAuthUUID())
+                f.write('\t')
+                f.write(token_hint)
+                f.write('\t')
+                f.write(json.dumps(authhandler.getRefreshInfo()))
+                f.write('\n')
 
-        # Add index file to that known to URLFS
-        with open(os.path.join(configdir,'remote.config'),"a") as f:
-            f.write(idxfile)
-            if len(token_hdrs) > 0:
-                for h in token_hdrs:
-                    f.write("\t" + h)
-            f.write("\n")
+            # Add index file to that known to URLFS
+            with open(os.path.join(configdir,'remote.config'),"a") as f:
+                f.write(idxfile)
+                if len(token_hdrs) > 0:
+                    for h in token_hdrs:
+                        f.write("\t" + h)
+                f.write("\n")
 
-        with open(idxfile,"w") as f:
-            for fil in files_urlfs:
-                f.write(fil + "\n")
+            with open(idxfile,"w") as f:
+                for fil in files_urlfs:
+                    f.write(fil + "\n")
 
-        # mount urlfs if not already mounted
-        if not os.path.ismount(mountdir):
-            # mount
-            os.mkdir(mountdir)
-            subprocess.run(["/urlfs/src/mount.urlfs", os.path.join(configdir,'remote.config'), mountdir])
-        else:
-            # reload urlfs (multiple should not be found, but in case user also used it separately from us,
-            # reload all instances)
-            for pid in map(int,subprocess.check_output(["pidof","mount.urlfs"]).split()):
-                os.kill(pid,SIGUSR1)
+            # mount urlfs if not already mounted
+            if not os.path.ismount(mountdir):
+                # mount
+                os.mkdir(mountdir)
+                subprocess.run(["/urlfs/src/mount.urlfs", os.path.join(configdir,'remote.config'), mountdir])
+            else:
+                # reload urlfs (multiple should not be found, but in case user also used it separately from us,
+                # reload all instances)
+                for pid in map(int,subprocess.check_output(["pidof","mount.urlfs"]).split()):
+                    os.kill(pid,SIGUSR1)
+
 
         analysis_hint = self.get_argument('analysis_hint','')
         if not (analysis_hint in analysis_handlers):
@@ -135,6 +138,7 @@ class AutoLaunchHandler(JupyterHandler):
             return_url = self.base_url + 'lab/'
 
         return self.redirect(return_url)
+
 
 class RefreshAuthHandler(JupyterHandler):
     """
