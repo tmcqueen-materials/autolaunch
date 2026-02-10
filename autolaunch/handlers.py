@@ -49,7 +49,7 @@ class AutoLaunchHandler(JupyterHandler):
 
         authhandler = auth_handlers[token_hint](self.get_argument('auth_token', ''))
         token_hdrs = authhandler.getAuthHeaders()
-        files_urlfs = self.get_argument('files', '')
+        files_urlfs = self.get_argument('files', 'W10') # W10= is [], aka empty JSON list
         files_urlfs = json.loads(urlsafe_b64decode(files_urlfs + '=' * ((4 - len(files_urlfs)) % 4)))
 
         basedir = os.path.expanduser(self.settings['server_root_dir'])
