@@ -42,6 +42,9 @@ class AutoLaunchHandler(JupyterHandler):
         auth_token		Auth token data in format expected by chosen auth handler
 	auth_token_hint		(Optional) select auth handler. Default: polyauth
 	files			List of files/directory structure to present inside notebook, in URLFS index file format
+
+        An optional parameter "title" can also be provided to change the name of where the resulting analysis is stored
+        from the default.
         """
         token_hint = self.get_argument('auth_token_hint', 'polyauth') # default is polyauth. Maybe change to oauth2 at some point?
         if not (token_hint in auth_handlers):
