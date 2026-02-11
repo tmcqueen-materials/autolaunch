@@ -138,7 +138,7 @@ class AutoLaunchHandler(JupyterHandler):
             analysis_handlers[analysis_hint].copyTemplate(analysisdir, self.analysis_notebooks_src)
             return_url = self.base_url + 'lab/tree/' + analysis_subpath + '/' + analysis_handlers[analysis_hint].getAnalysisFileName()
         else:
-            return_url = self.base_url + 'lab/'
+            return_url = self.base_url + 'lab/tree/' + analysis_subpath
 
         return self.redirect(return_url)
 
