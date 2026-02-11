@@ -13,7 +13,10 @@ class PolyauthAuthHandlerClass(AuthBaseHandlerClass):
     def __init__(self, auth_token, refresh_info=None, handler=None):
         self.uuid = token_hex(16)
         if refresh_info is None:
-            params = json.loads(urlsafe_b64decode(auth_token + '=' * ((4 - len(auth_token)) % 4)))
+            if not (auth_token is None) and len(auth_token) > 0:
+                params = json.loads(urlsafe_b64decode(auth_token + '=' * ((4 - len(auth_token)) % 4)))
+            else:
+                params = {'token': ''}
             self.token = params['token']
             self.refresh_endpoint = None
             self.refresh_endpoint_params = None
@@ -30,7 +33,7 @@ class PolyauthAuthHandlerClass(AuthBaseHandlerClass):
         return self.uuid
 
     def getAuthHeaders(self):
-        if self.token and len(self.token) > 0:
+        if not (self.token is None) and len(self.token) > 0:
             return ["X-Auth-Access-Token: " + self.token]
         else:
             return []
